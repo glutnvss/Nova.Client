@@ -26,13 +26,16 @@
       "target": [
         { "target": "nsis", "arch": ["x64"] },
         { "target": "portable", "arch": ["x64"] }
-      ],
-      "artifactName": "Nova-Launcher-${version}-${target}.${ext}"
+      ]
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true
+      "createDesktopShortcut": true,
+      "artifactName": "Nova-Launcher-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "Nova-Launcher-Portable-${version}.${ext}"
     }
   }
 }
