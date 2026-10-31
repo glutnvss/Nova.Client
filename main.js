@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { Client } = require('minecraft-launcher-core');
@@ -93,6 +93,109 @@ ipcMain.handle('auth:login', async () => {
 });
 
 ipcMain.handle('auth:logout', () => { session = null; return null; });
+
+/* ---------- content: mods & resource packs ---------- */
+
+const KINDS = {
+  mods: { folder: 'mods', ext: ['jar'], type: 'mod', label: 'Mods' },
+  resourcepacks: { folder: 'resourcepacks', ext: ['zip'], type: 'resourcepack', label: 'Resource packs' },
+};
+const kindOf = (k) => {
+  if (!KINDS[k]) throw new Error('Unknown content type');
+  return KINDS[k];
+};
+const contentDir = (id, kind) => {
+  const dir = path.join(instanceDir(id), kindOf(kind).folder);
+  fs.mkdirSync(dir, { recursive: true });
+  return dir;
+};
+const findInstance = (id) => {
+  const inst = readJson(INSTANCES_FILE(), []).find((i) => i.id === id);
+  if (!inst) throw new Error('Instance not found');
+  return inst;
+};
+
+ipcMain.handle('content:list', (_e, id, kind) => {
+  const dir = contentDir(id, kind);
+  return fs.readdirSync(dir)
+    .filter((f) => fs.statSync(path.join(dir, f)).isFile())
+    .sort((a, b) => a.localeCompare(b));
+});
+
+ipcMain.handle('content:remove', (_e, id, kind, file) => {
+  fs.rmSync(path.join(contentDir(id, kind), path.basename(file)), { force: true });
+  return true;
+});
+
+ipcMain.handle('content:import', async (_e, id, kind) => {
+  const k = kindOf(kind);
+  const res = await dialog.showOpenDialog(win, {
+    title: `Import ${k.label}`,
+    properties: ['openFile', 'multiSelections'],
+    filters: [{ name: k.label, extensions: k.ext }],
+  });
+  if (res.canceled) return 0;
+  const dir = contentDir(id, kind);
+  for (const file of res.filePaths) {
+    fs.copyFileSync(file, path.join(dir, path.basename(file)));
+  }
+  return res.filePaths.length;
+});
+
+ipcMain.handle('modrinth:search', async (_e, { query, version, kind }) => {
+  const k = kindOf(kind);
+  const facets = [[`project_type:${k.type}`], [`versions:${version}`]];
+  if (kind === 'mods') facets.push(['categories:fabric']);
+  const url =
+    `https://api.modrinth.com/v2/search?query=${encodeURIComponent(query || '')}` +
+    `&limit=20&facets=${encodeURIComponent(JSON.stringify(facets))}`;
+  const data = await getJson(url);
+  return data.hits.map((h) => ({
+    id: h.project_id,
+    title: h.title,
+    description: h.description,
+    icon: h.icon_url,
+    author: h.author,
+    downloads: h.downloads,
+  }));
+});
+
+const FABRIC_API_PROJECT = 'P7dR8mSH'; // the launcher installs Fabric API itself
+
+async function installModrinth(dir, projectId, inst, kind, seen) {
+  if (seen.has(projectId)) return [];
+  seen.add(projectId);
+
+  const params = [`game_versions=${encodeURIComponent(JSON.stringify([inst.version]))}`];
+  if (kind === 'mods') params.push(`loaders=${encodeURIComponent(JSON.stringify(['fabric']))}`);
+  const versions = await getJson(`https://api.modrinth.com/v2/project/${projectId}/version?${params.join('&')}`);
+  const v = versions[0];
+  if (!v) throw new Error(`No compatible version found for Minecraft ${inst.version}`);
+
+  const file = v.files.find((f) => f.primary) || v.files[0];
+  const installed = [];
+  const dest = path.join(dir, path.basename(file.filename));
+  if (!fs.existsSync(dest)) {
+    const res = await fetch(file.url, { headers: { 'User-Agent': 'NovaLauncher/1.0' } });
+    if (!res.ok) throw new Error(`Download failed (${res.status})`);
+    fs.writeFileSync(dest, Buffer.from(await res.arrayBuffer()));
+    installed.push(file.filename);
+  }
+
+  if (kind === 'mods') {
+    for (const dep of v.dependencies || []) {
+      if (dep.dependency_type === 'required' && dep.project_id && dep.project_id !== FABRIC_API_PROJECT) {
+        installed.push(...(await installModrinth(dir, dep.project_id, inst, kind, seen)));
+      }
+    }
+  }
+  return installed;
+}
+
+ipcMain.handle('modrinth:install', async (_e, { id, projectId, kind }) => {
+  const inst = findInstance(id);
+  return installModrinth(contentDir(id, kind), projectId, inst, kind, new Set());
+});
 
 /* ---------- launching ---------- */
 

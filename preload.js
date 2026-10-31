@@ -13,5 +13,10 @@ contextBridge.exposeInMainWorld('nova', {
   authState: invoke('auth:state'),
   login: invoke('auth:login'),
   logout: invoke('auth:logout'),
+  listContent: invoke('content:list'),
+  removeContent: invoke('content:remove'),
+  importContent: invoke('content:import'),
+  searchModrinth: invoke('modrinth:search'),
+  installModrinth: invoke('modrinth:install'),
   onStatus: (cb) => ipcRenderer.on('launch:status', (_e, p) => cb(p)),
 });
