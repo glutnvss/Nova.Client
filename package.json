@@ -1,0 +1,38 @@
+{
+  "name": "nova-launcher",
+  "productName": "Nova Launcher",
+  "version": "1.0.0",
+  "description": "A Minecraft launcher for Fabric instances",
+  "author": "Nova",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win --publish never"
+  },
+  "dependencies": {
+    "minecraft-launcher-core": "^3.18.2",
+    "msmc": "^5.0.5"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "com.nova.launcher",
+    "productName": "Nova Launcher",
+    "files": ["main.js", "preload.js", "renderer/**/*", "package.json"],
+    "directories": { "output": "dist" },
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ],
+      "artifactName": "Nova-Launcher-${version}-${target}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
+    }
+  }
+}
