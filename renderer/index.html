@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; img-src 'self' https://mc-heads.net data:;" />
+  <title>Nova Launcher</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand"><span class="logo">N</span><span>Nova Launcher</span></div>
+    <nav>
+      <button class="nav active" data-view="home">Home</button>
+      <button class="nav" data-view="settings">Settings</button>
+      <button class="nav" data-view="accounts">Accounts</button>
+    </nav>
+    <div class="account-mini" id="accountMini">
+      <span class="avatar" id="miniAvatar"></span>
+      <div><div class="acc-title">Account</div><div class="acc-name" id="miniName">Not signed in</div></div>
+    </div>
+  </aside>
+
+  <main>
+    <section id="view-home" class="view">
+      <header class="head">
+        <div>
+          <h1>Your instances</h1>
+          <p class="muted" id="count"></p>
+        </div>
+        <button class="btn primary" id="newBtn">+ New instance</button>
+      </header>
+      <div class="grid" id="grid"></div>
+    </section>
+
+    <section id="view-settings" class="view hidden">
+      <h1>Settings</h1>
+      <label>Max memory
+        <input id="ramInput" placeholder="4G" />
+      </label>
+      <label>Java path (leave blank to use system Java 21)
+        <input id="javaInput" placeholder="C:\Program Files\Java\jdk-21\bin\javaw.exe" />
+      </label>
+      <button class="btn primary" id="saveSettings">Save</button>
+      <p class="muted" id="settingsMsg"></p>
+    </section>
+
+    <section id="view-accounts" class="view hidden">
+      <h1>Accounts</h1>
+      <p class="muted" id="accStatus">Not signed in.</p>
+      <button class="btn primary" id="loginBtn">Sign in with Microsoft</button>
+      <button class="btn" id="logoutBtn">Sign out</button>
+    </section>
+  </main>
+
+  <div class="modal hidden" id="modal">
+    <div class="card">
+      <h2>New instance</h2>
+      <label>Name <input id="nameInput" placeholder="My instance" maxlength="40" /></label>
+      <label>Minecraft version <input id="verInput" value="1.21.11" /></label>
+      <label>Note <input id="noteInput" placeholder="optional" maxlength="60" /></label>
+      <div class="row">
+        <button class="btn" id="cancelBtn">Cancel</button>
+        <button class="btn primary" id="createBtn">Create</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast hidden" id="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>
